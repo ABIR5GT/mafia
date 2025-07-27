@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Celebrity Mafia (Offline)</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #121212;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    h1, h2, h3 {
+      margin-bottom: 1rem;
+      color: #00ffcc;
+    }
+    input, button, select {
+      padding: 0.6rem 1rem;
+      margin: 0.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    input, select {
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+    }
+    button {
+      background: #00cc99;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background: #00b386;
+    }
+    .hidden { display: none; }
+    #container {
+      max-width: 600px;
+      width: 100%;
+      background: #1e1e1e;
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 0 20px rgba(0,255,204,0.1);
+    }
+  
+    .mobile #container {
+      width: 100% !important;
+      max-width: none !important;
+      padding: 1rem !important;
+    }
+    .mobile button, .mobile select, .mobile input {
+      font-size: 1.2rem;
+      width: 90%;
+    }
+    
+</style>
+</head>
+<body>
+  <div id="container">
+    <h1>🎭 Celebrity Mafia (Offline)</h1>
+<button onclick="toggleLayout()">Switch Layout</button>
+    <div id="setup">
+      <label for="playerCount">How many players?</label>
+      <select id="playerCount" onchange="generateInputs()">
+        <option value="3">3</option>
+        <option value="5" selected>5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+      </select>
+      <p>Enter player names:</p>
+      <div id="nameInputs"></div>
+      <p>Select a category:</p>
+      <select id="categorySelect"></select><br>
+      <button onclick="startGame()">Start Game</button>
+    </div>
+    <div id="revealRole" class="hidden">
+      <h2 id="currentPlayer"></h2>
+      <p>Your word is: <strong id="celebName"></strong></p>
+      <button onclick="nextReveal()">Next Player</button>
+    </div>
+    <div id="voting" class="hidden">
+      <h3>Vote for the Impostor</h3>
+      <div id="voteArea"></div>
+      <button onclick="tallyVotes()">Reveal Result</button>
+    </div>
+    <div id="result" class="hidden">
+      <h2 id="resultText"></h2>
+      <button onclick="playAgain()">Play Again</button>
+    </div>
+  </div>
+
+<script>
+const allCategories = {
+  "Celebrities": [
+    "Zendaya",
+    "Tom Holland",
+    "Taylor Swift",
+    "Drake",
+    "Beyonce",
+    "Dua Lipa",
+    "Rihanna",
+    "Doja Cat",
+    "Ariana Grande",
+    "Kylie Jenner",
+    "Ed Sheeran",
+    "Billie Eilish",
+    "Harry Styles",
+    "Selena Gomez",
+    "Nicki Minaj",
+    "Lizzo",
+    "Bruno Mars",
+    "SZA",
+    "Kendrick Lamar",
+    "Shawn Mendes",
+    "Post Malone",
+    "Jennifer Lopez",
+    "Olivia Rodrigo",
+    "Justin Bieber",
+    "Lady Gaga",
+    "Travis Scott",
+    "The Weeknd",
+    "Camila Cabello",
+    "Megan Thee Stallion",
+    "Bad Bunny"
+  ],
+  "Animals": [
+    "Tiger",
+    "Elephant",
+    "Penguin",
+    "Dolphin",
+    "Rabbit",
+    "Giraffe",
+    "Kangaroo",
+    "Fox",
+    "Bear",
+    "Eagle",
+    "Panda",
+    "Lion",
+    "Zebra",
+    "Owl",
+    "Crocodile",
+    "Wolf",
+    "Snake",
+    "Monkey",
+    "Dog",
+    "Cat",
+    "Horse",
+    "Shark",
+    "Peacock",
+    "Squirrel",
+    "Bat",
+    "Koala",
+    "Chameleon",
+    "Frog",
+    "Mole",
+    "Crab"
+  ],
+  "Countries": [
+    "France",
+    "India",
+    "Japan",
+    "Canada",
+    "Brazil",
+    "Germany",
+    "Italy",
+    "Mexico",
+    "China",
+    "Spain",
+    "Russia",
+    "South Africa",
+    "Australia",
+    "USA",
+    "UK",
+    "New Zealand",
+    "Argentina",
+    "Egypt",
+    "Greece",
+    "Sweden",
+    "Norway",
+    "Turkey",
+    "Thailand",
+    "Portugal",
+    "Netherlands",
+    "South Korea",
+    "Vietnam",
+    "Indonesia",
+    "Peru",
+    "Switzerland"
+  ],
+  "Foods": [
+    "Pizza",
+    "Burger",
+    "Fries",
+    "Pasta",
+    "Salad",
+    "Sushi",
+    "Ramen",
+    "Taco",
+    "Burrito",
+    "Curry",
+    "Ice Cream",
+    "Donut",
+    "Chocolate",
+    "Cake",
+    "Cookies",
+    "Hotdog",
+    "Sandwich",
+    "Steak",
+    "Waffle",
+    "Pancake",
+    "Apple Pie",
+    "Lasagna",
+    "Kebab",
+    "Chips",
+    "Rice",
+    "Noodles",
+    "Soup",
+    "Muffin",
+    "Dumplings",
+    "Toast"
+  ],
+  "Drinks": [
+    "Coke",
+    "Pepsi",
+    "Sprite",
+    "Fanta",
+    "Mountain Dew",
+    "Lemonade",
+    "Water",
+    "Orange Juice",
+    "Apple Juice",
+    "Milkshake",
+    "Smoothie",
+    "Iced Tea",
+    "Coffee",
+    "Tea",
+    "Hot Chocolate",
+    "Energy Drink",
+    "Ginger Ale",
+    "Root Beer",
+    "Coconut Water",
+    "Milk",
+    "Grape Juice",
+    "Pineapple Juice",
+    "Mango Lassi",
+    "Iced Coffee",
+    "Herbal Tea",
+    "Matcha",
+    "Bubble Tea",
+    "Chocolate Milk",
+    "Soda Water",
+    "Slushie"
+  ],
+  "Movies": [
+    "Inception",
+    "Titanic",
+    "Avatar",
+    "Frozen",
+    "The Matrix",
+    "Up",
+    "Gladiator",
+    "Shrek",
+    "The Lion King",
+    "Interstellar",
+    "Joker",
+    "Avengers",
+    "Iron Man",
+    "Toy Story",
+    "Finding Nemo",
+    "The Godfather",
+    "Black Panther",
+    "Star Wars",
+    "The Batman",
+    "Monsters Inc.",
+    "Minions",
+    "Kung Fu Panda",
+    "Moana",
+    "Coco",
+    "Spiderman",
+    "Deadpool",
+    "The Incredibles",
+    "Cars",
+    "Luca",
+    "Encanto"
+  ],
+  "Games": [
+    "Minecraft",
+    "Fortnite",
+    "Roblox",
+    "Among Us",
+    "Call of Duty",
+    "FIFA",
+    "GTA",
+    "Valorant",
+    "League of Legends",
+    "Rocket League",
+    "Apex Legends",
+    "Overwatch",
+    "Zelda",
+    "Mario Kart",
+    "Pokemon",
+    "Tetris",
+    "The Sims",
+    "Halo",
+    "Animal Crossing",
+    "PUBG",
+    "Skyrim",
+    "Clash Royale",
+    "Clash of Clans",
+    "Candy Crush",
+    "Subway Surfers",
+    "Fall Guys",
+    "CS:GO",
+    "NBA 2K",
+    "Brawl Stars",
+    "Terraria"
+  ],
+  "School Subjects": [
+    "Maths",
+    "English",
+    "Science",
+    "History",
+    "Geography",
+    "French",
+    "Spanish",
+    "Biology",
+    "Chemistry",
+    "Physics",
+    "Art",
+    "Music",
+    "Drama",
+    "PE",
+    "IT",
+    "Economics",
+    "Business",
+    "Sociology",
+    "Psychology",
+    "Philosophy",
+    "Politics",
+    "Law",
+    "Engineering",
+    "Design",
+    "Media",
+    "Photography",
+    "Dance",
+    "Statistics",
+    "Latin",
+    "Citizenship"
+  ],
+  "Songs or Artists": [
+    "Bad Guy",
+    "Blinding Lights",
+    "Levitating",
+    "Shape of You",
+    "Hello",
+    "Despacito",
+    "Stay",
+    "Uptown Funk",
+    "Someone Like You",
+    "Old Town Road",
+    "Senorita",
+    "Havana",
+    "Dance Monkey",
+    "Heat Waves",
+    "Shallow",
+    "WAP",
+    "Peaches",
+    "Drivers License",
+    "Montero",
+    "Thank U, Next",
+    "Taylor Swift",
+    "Drake",
+    "Adele",
+    "Dua Lipa",
+    "Rihanna",
+    "Ed Sheeran",
+    "The Weeknd",
+    "Billie Eilish",
+    "BTS",
+    "Post Malone"
+  ],
+  "Objects": [
+    "Phone",
+    "Laptop",
+    "Book",
+    "Chair",
+    "Table",
+    "Car",
+    "Watch",
+    "Backpack",
+    "Pen",
+    "Pencil",
+    "Notebook",
+    "Headphones",
+    "Television",
+    "Fridge",
+    "Microwave",
+    "Lamp",
+    "Fan",
+    "Mirror",
+    "Shoe",
+    "Socks",
+    "Toothbrush",
+    "Bottle",
+    "Camera",
+    "Scissors",
+    "Wallet",
+    "Key",
+    "Spoon",
+    "Fork",
+    "Bowl",
+    "Mug"
+  ]
+};
+
+let playerNames = [];
+let assignedWords = {};
+let impostor = "";
+let revealIndex = 0;
+let votes = {};
+let eliminated = [];
+let round = 1;
+let category = "";
+
+window.onload = () => {
+  generateInputs();
+  const catSelect = document.getElementById("categorySelect");
+  Object.keys(allCategories).forEach(key => {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = key;
+    catSelect.appendChild(opt);
+  });
+};
+
+function generateInputs() {
+  const count = parseInt(document.getElementById("playerCount").value);
+  const nameInputsDiv = document.getElementById("nameInputs");
+  nameInputsDiv.innerHTML = "";
+  for (let i = 0; i < count; i++) {
+    const input = document.createElement("input");
+    input.placeholder = `Player ${i + 1}`;
+    input.id = `player${i}`;
+    nameInputsDiv.appendChild(input);
+    nameInputsDiv.appendChild(document.createElement("br"));
+  }
+}
+
+function startGame() {
+  playerNames = [];
+  const count = parseInt(document.getElementById("playerCount").value);
+  for (let i = 0; i < count; i++) {
+    const name = document.getElementById(`player${i}`).value.trim();
+    if (!name) return alert("Please enter all player names.");
+    playerNames.push(name);
+  }
+
+  category = document.getElementById("categorySelect").value;
+  assignWords();
+  document.getElementById("setup").classList.add("hidden");
+  beginDescriptionPhase();
+}
+
+function assignWords() {
+  const words = [...allCategories[category]];
+  const shuffled = words.sort(() => 0.5 - Math.random()).slice(0, 2);
+  impostor = playerNames[Math.floor(Math.random() * playerNames.length)];
+  assignedWords = {};
+  playerNames.forEach(name => {
+    assignedWords[name] = (name === impostor) ? shuffled[1] : shuffled[0];
+  });
+}
+
+function showReveal() {
+  const name = playerNames[revealIndex];
+  const next = descriptionOrder[(currentPlayerIndex + 1) % descriptionOrder.length];
+document.getElementById("currentPlayer").innerText = `You are ${name}. Your word is below. When done, pass to ${next}`;
+  document.getElementById("celebName").innerText = assignedWords[name];
+  document.getElementById("revealRole").classList.remove("hidden");
+}
+
+function nextReveal() {
+  revealIndex++;
+  if (revealIndex < playerNames.length) {
+    beginDescriptionPhase();
+  } else {
+    document.getElementById("revealRole").classList.add("hidden");
+    showVoting();
+  }
+}
+
+function showVoting() {
+  const voteArea = document.getElementById("voteArea");
+  voteArea.innerHTML = "";
+  votes = {};
+  playerNames.forEach(name => {
+    if (!eliminated.includes(name)) {
+      const label = document.createElement("label");
+      label.innerText = `${name} votes: `;
+      const select = document.createElement("select");
+      select.id = `vote-${name}`;
+      playerNames.forEach(p => {
+        if (!eliminated.includes(p)) {
+          const option = document.createElement("option");
+          option.value = p;
+          option.innerText = p;
+          select.appendChild(option);
+        }
+      });
+      voteArea.appendChild(label);
+      voteArea.appendChild(select);
+      voteArea.appendChild(document.createElement("br"));
+    }
+  });
+  document.getElementById("voting").classList.remove("hidden");
+}
+
+function tallyVotes() {
+  const counts = {};
+  playerNames.forEach(name => {
+    if (!eliminated.includes(name)) {
+      const vote = document.getElementById(`vote-${name}`).value;
+      counts[vote] = (counts[vote] || 0) + 1;
+    }
+  });
+  let maxVotes = 0, eliminatedPlayer = null;
+  for (let p in counts) {
+    if (counts[p] > maxVotes) {
+      maxVotes = counts[p];
+      eliminatedPlayer = p;
+    }
+  }
+  eliminated.push(eliminatedPlayer);
+
+  const result = document.getElementById("resultText");
+  const remaining = playerNames.filter(p => !eliminated.includes(p));
+  if (eliminatedPlayer === impostor) {
+    result.innerText = `🎉 ${eliminatedPlayer} was the impostor! You win!`;
+  } else if (remaining.length <= 2) {
+    result.innerText = `😈 Only 2 players left. Impostor (${impostor}) wins!`;
+  } else {
+    result.innerText = `${eliminatedPlayer} was innocent. Moving to round ${++round}...`;
+    assignWords();
+  }
+
+  document.getElementById("voting").classList.add("hidden");
+  document.getElementById("result").classList.remove("hidden");
+}
+
+function playAgain() {
+  location.reload();
+}
+
+let descriptionOrder = [];
+let totalCycles = 3;
+let currentCycle = 1;
+let currentPlayerIndex = 0;
+function beginDescriptionPhase() {
+  descriptionOrder = playerNames.filter(p => !eliminated.includes(p));
+  currentCycle = 1;
+  currentPlayerIndex = 0;
+  document.getElementById("revealRole").classList.remove("hidden");
+  showCurrentDescriptionTurn();
+}
+function showCurrentDescriptionTurn() {
+  const name = descriptionOrder[currentPlayerIndex];
+  const next = descriptionOrder[(currentPlayerIndex + 1) % descriptionOrder.length];
+document.getElementById("currentPlayer").innerText = `You are ${name}. Your word is below. When done, pass to ${next}`;
+  document.getElementById("celebName").innerText = assignedWords[name];
+}
+function nextReveal() {
+  currentPlayerIndex++;
+  if (currentPlayerIndex >= descriptionOrder.length) {
+    currentPlayerIndex = 0;
+    currentCycle++;
+  }
+  if (currentCycle > totalCycles) {
+    document.getElementById("revealRole").classList.add("hidden");
+    showVoting();
+  } else {
+    showCurrentDescriptionTurn();
+  }
+}
+
+
+function toggleLayout() {
+  document.body.classList.toggle("mobile");
+}
+</script>
+
+</body>
+</html>
